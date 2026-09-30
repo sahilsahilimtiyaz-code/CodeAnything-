@@ -173,9 +173,9 @@ class OpencodeBridge @Inject constructor() {
                 call.execute().use { resp ->
                     if (!resp.isSuccessful) {
                         onEvent(OpEvent.StreamError("HTTP ${resp.code}"))
-                        return
+                        return@thread
                     }
-                    val source = resp.body?.source() ?: return
+                    val source = resp.body?.source() ?: return@thread
                     val dataLines = mutableListOf<String>()
                     while (!closed.get()) {
                         val line = try {

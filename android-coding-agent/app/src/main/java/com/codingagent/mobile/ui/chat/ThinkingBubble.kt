@@ -128,7 +128,7 @@ private fun Dot(alpha: Float) {
 private fun formatElapsed(seconds: Long): String {
     val m = seconds / 60
     val s = seconds % 60
-    return if (m == 0) "${s}s" else "${m}m ${s.toString().padStart(2, '0')}s"
+    return if (m == 0L) "${s}s" else "${m}m ${s.toString().padStart(2, '0')}s"
 }
 
 /** Compact tool-call timeline under a finished assistant message. */
