@@ -7,6 +7,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -68,12 +69,18 @@ fun ThinkingBubble(
     }
 
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+        val bubbleShape = RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp)
         Column(
             modifier = Modifier
                 .widthIn(max = 520.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(12.dp)
+                .clip(bubbleShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .border(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                    bubbleShape
+                )
+                .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(

@@ -61,6 +61,8 @@ class SettingsViewModel @Inject constructor(
         agentRepository.selectAgent(kind)
     }
 
+    fun diagnostics(): String = runtimeManager.diagnostics()
+
     fun installCli() {
         viewModelScope.launch {
             agentRepository.installCli()

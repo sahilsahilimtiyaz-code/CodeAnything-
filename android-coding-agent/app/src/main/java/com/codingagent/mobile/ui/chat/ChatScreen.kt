@@ -1,6 +1,7 @@
 package com.codingagent.mobile.ui.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -265,7 +266,12 @@ private fun MessageBubble(message: ChatMessage) {
     val bg = if (isUser) {
         MaterialTheme.colorScheme.primaryContainer
     } else {
-        MaterialTheme.colorScheme.surfaceVariant
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+    val bubbleShape = if (isUser) {
+        RoundedCornerShape(18.dp, 18.dp, 4.dp, 18.dp)
+    } else {
+        RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp)
     }
     val alignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
 
@@ -273,9 +279,14 @@ private fun MessageBubble(message: ChatMessage) {
         Column(
             modifier = Modifier
                 .widthIn(max = 520.dp)
-                .clip(RoundedCornerShape(16.dp))
+                .clip(bubbleShape)
                 .background(bg)
-                .padding(12.dp)
+                .border(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                    bubbleShape
+                )
+                .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             if (!isUser) {
                 Text(
@@ -290,6 +301,18 @@ private fun MessageBubble(message: ChatMessage) {
                 style = MaterialTheme.typography.bodyLarge
             )
             ToolTimeline(tools = message.toolCalls)
+            Text(
+                text = java.text.SimpleDateFormat(
+                    "HH:mm",
+                    java.util.Locale.getDefault()
+                ).format(java.util.Date(message.timestamp)),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.End
+            )
         }
     }
 }

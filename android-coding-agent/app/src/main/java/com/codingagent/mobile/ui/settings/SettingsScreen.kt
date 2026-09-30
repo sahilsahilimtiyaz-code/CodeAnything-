@@ -32,6 +32,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.codingagent.mobile.domain.AgentKind
@@ -45,6 +47,8 @@ fun SettingsScreen(
     val runtime by viewModel.runtimeStatus.collectAsState()
     val agent by viewModel.selectedAgent.collectAsState()
     val cliStatus by viewModel.cliStatus.collectAsState()
+    val clipboard = LocalClipboardManager.current
+    var copied by remember { mutableStateOf(false) }
     var preset by remember { mutableStateOf(ProviderPresets.OLLAMA_LOCAL) }
     var baseUrl by remember { mutableStateOf(ProviderPresets.OLLAMA_LOCAL.baseUrl) }
     var model by remember { mutableStateOf(ProviderPresets.OLLAMA_LOCAL.model) }
@@ -83,6 +87,13 @@ fun SettingsScreen(
                     Spacer(Modifier.height(8.dp))
                     Text("State: ${runtime.state.name}")
                     Text(runtime.message, style = MaterialTheme.typography.bodyMedium)
+                    runtime.error?.let {
+                        Text(
+                            "Error: $it",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                     runtime.alpineVersion?.let {
                         Text("Alpine: $it", style = MaterialTheme.typography.bodySmall)
                     }
@@ -110,6 +121,13 @@ fun SettingsScreen(
                                 else -> "Working…"
                             }
                         )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(onClick = {
+                        clipboard.setText(AnnotatedString(viewModel.diagnostics()))
+                        copied = true
+                    }) {
+                        Text(if (copied) "Diagnostics copied" else "Copy diagnostics")
                     }
                 }
             }
@@ -141,6 +159,8 @@ fun SettingsScreen(
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(
                             onClick = { viewModel.installCli() },
+                            enabled = runtime.state == RuntimeState.READY ||
+                                runtime.state == RuntimeState.RUNNING,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Install OpenCode CLI in Alpine")
@@ -154,6 +174,8 @@ fun SettingsScreen(
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(
                             onClick = { viewModel.installQwenCli() },
+                            enabled = runtime.state == RuntimeState.READY ||
+                                runtime.state == RuntimeState.RUNNING,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Install Qwen Code CLI in Alpine (npm)")

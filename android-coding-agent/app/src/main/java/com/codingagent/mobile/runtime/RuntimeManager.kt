@@ -83,6 +83,19 @@ class RuntimeManager @Inject constructor(
         false
     }
 
+    /** One-shot diagnostics for bug reports (no secrets included). */
+    fun diagnostics(): String = buildString {
+        appendLine("state=${_status.value.state}")
+        appendLine("message=${_status.value.message}")
+        appendLine("error=${_status.value.error}")
+        appendLine("alpineVersion=${readAlpineVersion()}")
+        appendLine("alpineOsRelease=${File(alpineDir, "etc/os-release").exists()}")
+        appendLine("prootExists=${prootBin.exists()} executable=${prootBin.canExecute()}")
+        appendLine("workspace=${workspaceDir.exists()}")
+        appendLine("nodeAlive=${isNodeRunning()} opencodeAlive=${isOpencodeRunning()}")
+        append("abi=${android.os.Build.SUPPORTED_ABIS.joinToString(",")}")
+    }
+
     suspend fun ensureReady() = withContext(Dispatchers.IO) {
         if (isInstalled()) {
             _status.value = RuntimeStatus(
