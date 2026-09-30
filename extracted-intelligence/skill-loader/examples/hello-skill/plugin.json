@@ -1,0 +1,6 @@
+{
+  "name": "Hello Skill",
+  "hubId": "hello-skill",
+  "description": "Example imported skill that greets the user and echoes text.",
+  "version": "1.0.0"
+}

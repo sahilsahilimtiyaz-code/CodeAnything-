@@ -1,0 +1,22 @@
+{
+  "name": "extracted-intelligence",
+  "version": "0.1.0",
+  "description": "Slimmed agent core, MCP, skills and providers extracted from AnythingLLM for mobile coding-agent use (AndCode/AnyClaw style)",
+  "type": "module",
+  "main": "agent-core/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "postbuild": "node -e \"require('node:fs').writeFileSync('dist/package.json', JSON.stringify({type:'module'}))\"",
+    "serve": "node dist/bridge/serve.js",
+    "test": "node examples/smoke-test.mjs && node examples/bridge-test.mjs && node examples/e2e-approval-test.mjs && node examples/allowlist-test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

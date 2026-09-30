@@ -1,0 +1,29 @@
+# Android / Gradle
+local.properties
+.gradle/
+.kotlin/
+**/build/
+*.apk
+*.aab
+*.ap_
+*.dex
+# Regenerated at build time by syncIntelligenceAssets
+android-coding-agent/app/src/main/assets/intelligence/
+
+# Node
+**/node_modules/
+extracted-intelligence/dist/
+npm-debug.log*
+
+# IDE / OS
+.idea/
+*.iml
+.DS_Store
+.vscode/
+
+# Secrets — never commit provider keys or tokens
+*.jks
+*.keystore
+
+# Reference-only upstream source (not needed to build; fetch separately)
+anything-llm-master/
