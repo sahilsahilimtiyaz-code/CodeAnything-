@@ -22,8 +22,9 @@ jobs:
 
       - name: Set up Android SDK packages
         run: |
-          yes | sdkmanager --licenses > /dev/null
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          SDCM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDCM" --licenses > /dev/null
+          "$SDCM" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Set up Node 20
         uses: actions/setup-node@v4
