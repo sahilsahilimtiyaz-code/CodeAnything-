@@ -32,23 +32,23 @@ jobs:
           node-version: "20"
 
       - name: Build extracted-intelligence (ships in APK assets)
-        working-directory: coding-agent-mobile/extracted-intelligence
+        working-directory: extracted-intelligence
         run: |
           npm install --no-audit --no-fund
           npm run build
           npm test
 
       - name: Make gradlew executable
-        working-directory: coding-agent-mobile/android-coding-agent
+        working-directory: android-coding-agent
         run: chmod +x gradlew
 
       - name: Assemble debug + unit tests
-        working-directory: coding-agent-mobile/android-coding-agent
+        working-directory: android-coding-agent
         run: ./gradlew :app:assembleDebug :app:testDebugUnitTest --console=plain
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: coding-agent-mobile/android-coding-agent/app/build/outputs/apk/debug/app-debug.apk
+          path: android-coding-agent/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
