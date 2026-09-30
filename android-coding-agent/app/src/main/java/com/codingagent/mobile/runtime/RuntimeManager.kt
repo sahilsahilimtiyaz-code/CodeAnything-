@@ -138,10 +138,35 @@ class RuntimeManager @Inject constructor(
                 writeText("nameserver 1.1.1.1\nnameserver 8.8.8.8\n")
             }
 
-            // 4. Bootstrap packages inside PRoot
+            // 4. Bootstrap packages inside PRoot (retried: phone networks flake)
             setStatus(RuntimeState.INSTALLING, "Installing packages (node, git, bash)…", 0.7f)
-            prootExec("apk update") ?: throw IllegalStateException("apk update failed")
-            prootExec("apk add --no-cache nodejs npm git bash curl ca-certificates openssh") ?: throw IllegalStateException("apk add failed")
+            val (updateCode, updateOut) = prootExecFull("apk update", 300)
+                .let { first ->
+                    if (first.first == 0) first
+                    else {
+                        Timber.w("apk update failed, retrying once")
+                        Thread.sleep(5000)
+                        prootExecFull("apk update", 300)
+                    }
+                }
+            if (updateCode != 0) {
+                throw IllegalStateException(
+                    "apk update failed (exit=$updateCode): " +
+                        updateOut.takeLast(600).trim().ifBlank { "no output" } +
+                        apkHint(updateOut)
+                )
+            }
+            val (addCode, addOut) = prootExecFull(
+                "apk add --no-cache nodejs npm git bash curl ca-certificates openssh",
+                600
+            )
+            if (addCode != 0) {
+                throw IllegalStateException(
+                    "apk add failed (exit=$addCode): " +
+                        addOut.takeLast(600).trim().ifBlank { "no output" } +
+                        apkHint(addOut)
+                )
+            }
 
             // 5. Stage intelligence bundle
             setStatus(RuntimeState.INSTALLING, "Staging intelligence service…", 0.85f)
@@ -414,27 +439,65 @@ class RuntimeManager @Inject constructor(
      * The timeout guarantees installs never hang the app (e.g. a CLI binary
      * that blocks on an unsupported syscall under nested PRoot).
      */
-    private fun prootExec(guestSh: String, timeoutSeconds: Long = 180): Int? {
+    private fun prootExec(guestSh: String, timeoutSeconds: Long = 180): Int? =
+        prootExecFull(guestSh, timeoutSeconds).first
+
+    /**
+     * Full version: also captures combined output (bounded) for diagnostics.
+     * The tail is mirrored to proot-stdout.log and returned for error text.
+     */
+    private fun prootExecFull(
+        guestSh: String,
+        timeoutSeconds: Long = 180
+    ): Pair<Int?, String> {
         val cmd = prootCommand("/bin/sh", "-lc", guestSh)
-        if (cmd.isEmpty()) return null
+        if (cmd.isEmpty()) return null to "proot unavailable"
         return try {
             val p = ProcessBuilder(cmd)
                 .directory(alpineDir)
-                .redirectOutput(File(runtimeRoot, "proot-stdout.log"))
-                .redirectError(File(runtimeRoot, "proot-stderr.log"))
+                .redirectErrorStream(true)
                 .start()
+            val output = StringBuilder()
+            val reader = Thread {
+                try {
+                    val buf = ByteArray(8192)
+                    while (true) {
+                        val n = p.inputStream.read(buf)
+                        if (n <= 0) break
+                        val chunk = String(buf, 0, n)
+                        synchronized(output) {
+                            output.append(chunk)
+                            if (output.length > 24_000) {
+                                output.delete(0, output.length - 24_000)
+                            }
+                        }
+                    }
+                } catch (_: Exception) {
+                }
+            }
+            reader.isDaemon = true
+            reader.start()
             val finished = p.waitFor(timeoutSeconds, TimeUnit.SECONDS)
+            reader.join(2000)
+            val text = synchronized(output) { output.toString() }
+            try {
+                File(runtimeRoot, "proot-stdout.log").writeText(text.takeLast(24_000))
+            } catch (_: Exception) {
+            }
             if (!finished) {
                 Timber.w("proot exec timed out after %ds: %s", timeoutSeconds, guestSh.take(120))
                 p.destroyForcibly()
-                return null
+                return null to ("timed out after ${timeoutSeconds}s:\n" + text.takeLast(2000))
             }
-            p.exitValue()
+            p.exitValue() to text
         } catch (e: Exception) {
             Timber.e(e, "proot exec failed")
-            null
+            null to (e.message ?: "exec failed")
         }
     }
+
+    /** Human hint for common apk/network failures, appended to install errors. */
+    internal fun apkHint(output: String): String = apkFailureHint(output)
 
     private fun stageIntelligenceBundle() {
         // The APK ships extracted-intelligence under assets/intelligence (added at packaging time
@@ -573,6 +636,23 @@ fun buildProotArgs(
         add("-w"); add("/workspace")
         add("-0")
         addAll(guestCmd)
+    }
+}
+
+/**
+ * Pure hint matcher for apk/network failures (unit-tested).
+ */
+fun apkFailureHint(output: String): String {
+    val o = output.lowercase()
+    return when {
+        "certificate" in o || "ssl" in o || "tls" in o ->
+            " (TLS error — check the device date/time is correct, then retry)"
+        "could not resolve" in o || "temporary failure" in o ||
+            "network unreachable" in o || "network is unreachable" in o ->
+            " (guest has no network/DNS — check internet connection, VPN or private DNS, then retry)"
+        "404" in o || "not found" in o ->
+            " (Alpine mirror unreachable from this network — retry or switch networks)"
+        else -> ""
     }
 }
 

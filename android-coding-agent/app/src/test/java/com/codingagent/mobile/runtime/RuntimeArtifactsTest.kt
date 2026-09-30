@@ -63,6 +63,13 @@ class RuntimeArtifactsTest {
     }
 
     @Test
+    fun `apk hints point at date-time and network`() {
+        assertTrue(apkFailureHint("ERROR: certificate verification failed").contains("date/time"))
+        assertTrue(apkFailureHint("Could not resolve dl-cdn.alpinelinux.org").contains("DNS"))
+        assertTrue(apkFailureHint("all good").isEmpty())
+    }
+
+    @Test
     fun `primary volume tree uri resolves to real path`() {
         assertEquals(
             "/storage/emulated/0/Download/foo",
